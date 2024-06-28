@@ -176,9 +176,7 @@ GenerateGeno_r <- function(freq, N, r, sibflag) # return r-degree relation g = l
       for(j in 1:2)
       {
         # ibd = sample(1:M, ceiling(M*ibdscore))
-        ibd = ifelse(M==1,
-                     which(as.logical(rbinom(M, 1, ibdscore))),
-                     sample(1:M, ceiling(M*ibdscore)))
+        ibd = which(as.logical(rbinom(M, 1, ibdscore)))
         gMat2[j,ibd] =  gMat1[j,ibd]
       }
     }
@@ -186,9 +184,7 @@ GenerateGeno_r <- function(freq, N, r, sibflag) # return r-degree relation g = l
     else
     {
       # ibd = sample(1:M, ceiling(M*ibdscore*2))
-      ibd = ifelse(M==1,
-                   which(as.logical(rbinom(M, 1, ibdscore))),
-                   sample(1:M, ceiling(M*ibdscore)))
+      ibd = which(as.logical(rbinom(M, 1, ibdscore*2)))
       gMat2[1,ibd] =  gMat1[1,ibd]
     }
     g[[1]][h, ] = apply(gMat1, 2, sum)
