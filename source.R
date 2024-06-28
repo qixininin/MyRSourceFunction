@@ -1,8 +1,9 @@
 ######### Genome function include LD information #########
-GenerateLDAllele <- function(freq, ld, inbred = F) # return gMat( M*2 ) for one individual two chromosome
+GenerateLDAllele <- function(freq, ld, inbred = NULL) # return gMat( M*2 ) for one individual two chromosome
 {
-  gMat = matrix(0, nrow=length(freq), ncol=2)
-  for(i in 1:length(freq))
+  M = length(freq)
+  gMat = matrix(0, nrow=M, ncol=2)
+  for(i in 1:M)
   {
     for(j in 1:2)
     {
@@ -19,15 +20,17 @@ GenerateLDAllele <- function(freq, ld, inbred = F) # return gMat( M*2 ) for one 
         f2 = ifelse(a == 0, freq[i], 1-freq[i])
         gMat[i,j] = ifelse(d < (f1 * f2 +ld[i-1])/f1, gMat[i-1,j], 1-gMat[i-1,j])
       }
-
-      if(inbred){
-        gMat[i,2] = gMat[i,1]
-        break
-      }
     }
+  }
+  # Inbred
+  if(!is.null(inbred)){
+    if(inbred>1 | inbred<=0) stop("Error from GenerateLDAllele(): inbred value should be between 0 and 1")
+    idx = sample(1:M, ceiling(M*inbred))
+    gMat[idx,2] = gMat[idx,1]
   }
   return(gMat)
 }
+
 GenerateLDAllele_r <- function(freq, ld, r, c) # return gMat( M*2 ) for one individual two chromosome
 {
   ld = ld*(1-c)^r
@@ -152,7 +155,7 @@ GenerateGeno <- function(freq, N) # return unrelated g( N*M )
   }
   return(g)
 }
-GenerateGeno_r <- function(freq, N, r, sibflag=TRUE) # return r-degree relation g = list( N*M , N*M )
+GenerateGeno_r <- function(freq, N, r, sibflag) # return r-degree relation g = list( N*M , N*M )
 {
   M = length(freq)
   g = list(matrix(NA, N, M), matrix(NA, N, M))
@@ -172,14 +175,20 @@ GenerateGeno_r <- function(freq, N, r, sibflag=TRUE) # return r-degree relation 
     {
       for(j in 1:2)
       {
-        ibd = sample(1:M, ceiling(M*ibdscore))
+        # ibd = sample(1:M, ceiling(M*ibdscore))
+        ibd = ifelse(M==1,
+                     which(as.logical(rbinom(M, 1, ibdscore))),
+                     sample(1:M, ceiling(M*ibdscore)))
         gMat2[j,ibd] =  gMat1[j,ibd]
       }
     }
     # father-son alike
     else
     {
-      ibd = sample(1:M, ceiling(M*ibdscore*2))
+      # ibd = sample(1:M, ceiling(M*ibdscore*2))
+      ibd = ifelse(M==1,
+                   which(as.logical(rbinom(M, 1, ibdscore))),
+                   sample(1:M, ceiling(M*ibdscore)))
       gMat2[1,ibd] =  gMat1[1,ibd]
     }
     g[[1]][h, ] = apply(gMat1, 2, sum)
@@ -416,6 +425,20 @@ get_upper_tri <- function(cormat, diag){
 get_lower_tri <- function(cormat, diag){
   cormat[upper.tri(cormat, !diag)]<- NA
   return(cormat)
+}
+
+############# plot function #############
+grmheatmap <- function(grm){
+  library(ggplot2)
+  n = nrow(grm)
+  grm.df = data.frame(x = rep(1:n, each = n),
+                      y = rep(1:n, n),
+                      z = as.vector(grm))
+  p = ggplot(grm.df, aes(x = x, y = y, fill = z)) +
+    geom_tile() +
+    scale_y_reverse()
+
+  return(p)
 }
 
 ############# lab function ###############
